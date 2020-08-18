@@ -1,11 +1,34 @@
 <?php
 require '../../core/functions.php';
-require '../../config/keys.php';
 require '../../core/db_connect.php';
+require '../../core/bootstrap.php';
 
+checkSession();
+
+// Get the post
+$get = filter_input_array(INPUT_GET);
+$id = $get['id'];
+
+$stmt = $pdo->prepare("SELECT * FROM posts WHERE id=:id");
+$stmt->execute(['id'=>$id]);
+
+$row = $stmt->fetch();
+
+//If the id cannot be found kill the request
+if(empty($row)){
+  http_response_code(404);
+  die('Page Not Found <a href="/">Home</a>');
+}
+
+//var_dump($row);
+$meta=[];
+$meta['title']= "Edit: {$row['title']}";
+
+// Update the post
 $message=null;
 
 $args = [
+    'id'=>FILTER_SANITIZE_STRING, //strips HMTL
     'title'=>FILTER_SANITIZE_STRING, //strips HMTL
     'meta_description'=>FILTER_SANITIZE_STRING, //strips HMTL
     'meta_keywords'=>FILTER_SANITIZE_STRING, //strips HMTL
@@ -25,44 +48,65 @@ if(!empty($input)){
     //Create the slug
     $slug = slug($input['title']);
 
-    //Sanitiezed insert
-    $sql = 'INSERT INTO posts SET id=uuid(), title=?, slug=?, body=?';
+    //Sanitized insert
+    $sql = 'UPDATE
+        posts
+      SET
+        title=:title,
+        slug=:slug,
+        body=:body,
+        meta_description=:meta_description,
+        meta_keywords=:meta_keywords
+      WHERE
+        id=:id';
 
     if($pdo->prepare($sql)->execute([
-        $input['title'],
-        $slug,
-        $input['body']
+        'title'=>$input['title'],
+        'slug'=>$slug,
+        'body'=>$input['body'],
+        'meta_description'=>$input['meta_description'],
+        'meta_keywords'=>$input['meta_keywords'],
+        'id'=>$input['id']
     ])){
-       header('LOCATION:/posts');
+       header('LOCATION: /example.com/public/posts/view.php?slug=' . $row['slug']);
     }else{
         $message = 'Something bad happened';
     }
 }
 
 $content = <<<EOT
-<h1>Add a New Post</h1>
+<h1>Edit: {$row['title']}</h1>
 {$message}
 <form method="post">
 
+<input id="id" name="id" value="{$row['id']}" type="hidden">
+
 <div class="form-group">
     <label for="title">Title</label>
-    <input id="title" name="title" type="text" class="form-control">
+    <input id="title" value="{$row['title']}" name="title" type="text" class="form-control">
 </div>
 
 <div class="form-group">
     <label for="body">Body</label>
-    <textarea id="body" name="body" rows="8" class="form-control"></textarea>
+    <textarea id="body" name="body" rows="8"
+      class="form-control"
+      >{$row['body']}
+    </textarea>
 </div>
 
 <div class="row">
     <div class="form-group col-md-6">
         <label for="meta_description">Description</label>
-        <textarea id="meta_description" name="meta_description" rows="2" class="form-control"></textarea>
+        <textarea id="meta_description" name="meta_description" rows="2"
+          class="form-control"
+          >{$row['meta_description']}</textarea>
     </div>
 
     <div class="form-group col-md-6">
         <label for="meta_keywords">Keywords</label>
-        <textarea id="meta_keywords" name="meta_keywords" rows="2" class="form-control"></textarea>
+        <textarea id="meta_keywords" name="meta_keywords" rows="2"
+          class="form-control"
+          >{$row['meta_keywords']}</textarea>
     </div>
 </div>
 
@@ -73,3 +117,4 @@ $content = <<<EOT
 EOT;
 
 include '../../core/layout.php';
+

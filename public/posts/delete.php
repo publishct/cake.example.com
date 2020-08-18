@@ -1,63 +1,41 @@
 <?php
-require '../../core/functions.php';
-require '../../config/keys.php';
+
 require '../../core/db_connect.php';
+require '../../core/bootstrap.php';
 
-$message=null;
+checkSession();
 
-$args = [
-    'title'=>FILTER_SANITIZE_STRING, //strips HMTL
-    'meta_description'=>FILTER_SANITIZE_STRING, //strips HMTL
-    'meta_keywords'=>FILTER_SANITIZE_STRING, //strips HMTL
-    'body'=>FILTER_UNSAFE_RAW  //NULL FILTER
+$args=[
+  'id'=>FILTER_UNSAFE_RAW,
+  'confirm'=>FILTER_VALIDATE_INT
 ];
 
-$input = filter_input_array(INPUT_POST, $args);
+$input = filter_input_array(INPUT_GET, $args);
+$id=$input['id'];
 
-if(!empty($input)){
+$stmt = $pdo->prepare("SELECT * FROM posts WHERE id=:id");
+$stmt->execute(['id'=>$id]);
+$row = $stmt->fetch();
 
-    //Strip white space, begining and end
-    $input = array_map('trim', $input);
-
-    //Allow only whitelisted HTML
-    $input['body'] = cleanHTML($input['body']);
-
-    //Create the slug
-    $slug = slug($input['title']);
-
-    //Sanitiezed insert
-    $sql = 'INSERT INTO posts SET id=uuid(), title=?, slug=?, body=?';
-
-    if($pdo->prepare($sql)->execute([
-        $input['title'],
-        $slug,
-        $input['body']
-    ])){
-       header('LOCATION:/posts');
-    }else{
-        $message = 'Something bad happened';
-    }
+if(!empty($input['confirm'])){
+  $stmt = $pdo->prepare("DELETE FROM posts WHERE id=:id");
+  if($stmt->execute(['id'=>$id])){
+    header('Location: /example.com/public/posts/');
+  }
 }
 
-$content = <<<EOT
-<h1>Confirm to delete post</h1>
-{$message}
-<form method="post">
+$meta=[];
+$meta['title']="DELETE: {$row['title']}";
 
-<div class="form-group">
-    <label for="title">Username</label>
-    <input id="title" name="title" type="text" class="form-control">
-</div>
+$content=<<<EOT
+<h1 class="text-danger text-center">DELETE: {$row['title']}</h1>
+<p class="text-danger text-center">Are you sure you want to delete {$row['title']}?</p>
 
-<div class="form-group">
-    <label for="body">Short description</label>
-    <textarea id="body" name="body" rows="3" class="form-control"></textarea>
+<div class="text-center">
+<a href="delete.php?id={$row['id']}&confirm=1" class="btn btn-link text-danger">Delete</a>
+<br><br>
+<a href="./" class="btn btn-success btn-lg">Cancel</a>
 </div>
-
-<div class="form-group">
-    <input type="submit" value="Submit" class="btn btn-primary">
-</div>
-</form>
 EOT;
 
-include '../../core/layout.php';
+require '../../core/layout.php';
