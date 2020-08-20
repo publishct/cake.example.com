@@ -49,8 +49,7 @@ if(!empty($input)){
     $slug = slug($input['title']);
 
     //Sanitized insert
-    $sql = 'UPDATE
-        posts
+    $sql = 'UPDATE posts
       SET
         title=:title,
         slug=:slug,
@@ -60,18 +59,19 @@ if(!empty($input)){
       WHERE
         id=:id';
 
-    if($pdo->prepare($sql)->execute([
-        'title'=>$input['title'],
-        'slug'=>$slug,
-        'body'=>$input['body'],
-        'meta_description'=>$input['meta_description'],
-        'meta_keywords'=>$input['meta_keywords'],
-        'id'=>$input['id']
-    ])){
-       header('LOCATION: /example.com/public/posts/view.php?slug=' . $row['slug']);
-    }else{
-        $message = 'Something bad happened';
-    }
+
+if($pdo->prepare($sql)->execute([
+  $input['title'],
+  $slug,
+  $input['body'],
+  $input['meta_description'],
+  $input['meta_keywords'],
+  $input['id']
+])){
+ header('LOCATION:view.php?slug='. $row['slug']);
+}else{
+  $message = 'Something bad happened';
+}
 }
 
 $content = <<<EOT
@@ -112,6 +112,8 @@ $content = <<<EOT
 
 <div class="form-group">
     <input type="submit" value="Submit" class="btn btn-primary">
+    <br><br>
+    <input type="reset" value="Reset" class="btn btn-secondary">
 </div>
 </form>
 EOT;

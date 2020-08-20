@@ -29,13 +29,22 @@ if(!empty($input)){
             $_SESSION['user'] = [];
             $_SESSION['user']['id']=$row['id'];
 
+            $args = [
+                'goto'=>FILTER_SANITIZE_STRING,
+              ];
+          
             // 6.2 Redirect the user
-            header('LOCATION: ../public' . $_POST['goto']);
+            // header('LOCATION: ' . $_POST['goto']);
+            $get = filter_input_array(INPUT_GET, $args);
+            $goto = !empty($get['goto'])?$get['goto']:'../public';
+            header('LOCATION: ' . $goto);
         }
     }
-}else{
-    $message = "<div class=\"alert alert-danger\">Authentication Failed</div>";
 }
+// my attempt at authentication error throwing
+// }else{
+//     $message = "<div class=\"alert alert-danger\">Authentication Failed</div>";
+// }
 
 $meta=[];
 $meta['title']="Login";

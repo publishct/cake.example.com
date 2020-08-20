@@ -7,4 +7,4 @@ $_SESSION=[];
 //Destroy the session file for this session
 session_destroy();
 
-header('LOCATION: /');
+header('LOCATION: ../public');

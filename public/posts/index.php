@@ -21,4 +21,4 @@ $content .= <<<EOT
 EOT;
 
 
-include '../../core/layout.php';
+echo $content;
